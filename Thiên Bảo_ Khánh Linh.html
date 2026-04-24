@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>tb và cua</title>
+
+<style>
+html{scroll-behavior:smooth}
+body{margin:0;font-family:'Segoe UI';background:linear-gradient(135deg,#fff5f2,#f5f5f5)}
+
+
+/* HEADER */
+header{
+position:fixed;width:100%;top:0;
+padding:15px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+background:transparent;
+transition:.3s;
+z-index:1000;
+}
+header.active{background:rgba(245, 91, 54);backdrop-filter:blur(10px)}
+
+nav a{
+margin:0 10px;
+color:white;
+text-decoration:none;
+font-weight:bold;
+cursor:pointer;
+}
+
+
+/* SECTION */
+.section{
+min-height:100vh;
+padding:100px 20px;
+max-width:1200px;
+margin:auto;
+opacity:0;
+transform:translateY(40px);
+transition:.6s;
+}
+.section.show{opacity:1;transform:translateY(0)}
+
+/* HERO */
+.hero{
+background:url('https://cdn.shopify.com/s/files/1/0766/3901/1096/files/vong-co-cho-meo-gia-re.jpg?v=1722552426') center/cover;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+color:white;
+text-align:center;
+}
+.hero::after{
+content:"";
+position:absolute;
+inset:0;
+background:rgba(0,0,0,0.4);
+}
+.hero h1,.hero p{position:relative;z-index:2}
+
+/* PRODUCTS */
+.products{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:20px;
+}
+.card{
+background:white;
+padding:10px;
+border-radius:15px;
+text-align:center;
+transition:.4s;
+box-shadow:0 10px 25px rgba(0,0,0,0.1);
+}
+.card:hover{
+transform:translateY(-10px) scale(1.05);
+}
+.card img{
+width:100%;
+height:150px;
+object-fit:cover;
+border-radius:10px;
+}
+
+/* BLOG */
+.blog-card{
+max-width:800px;
+margin:auto;
+background:white;
+border-radius:20px;
+overflow:hidden;
+box-shadow:0 15px 40px rgba(0,0,0,0.2);
+}
+.blog-card img{width:100%;height:250px;object-fit:cover}
+.blog-content{padding:20px}
+
+/* CONTACT */
+.contact{display:flex;gap:20px;justify-content:center;flex-wrap:wrap}
+.contact img{width:120px;height:120px;border-radius:50%}
+
+/* LOGIN POPUP */
+.popup{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,0.5);
+display:none;
+justify-content:center;
+align-items:center;
+}
+.popup-content{
+background:white;
+padding:20px;
+border-radius:15px;
+text-align:center;
+width:250px;
+}
+.popup input{padding:8px;width:90%}
+
+/* BUTTON */
+.btn{
+background:#ee4d2d;
+color:white;
+border:none;
+padding:6px 10px;
+cursor:pointer;
+border-radius:6px;
+margin:5px;
+}
+</style>
+</head>
+<!-- OVERLAY -->
+<div id="cartOverlay" onclick="closeCart()"></div>
+
+<!-- CART POPUP -->
+<div id="cartBox">
+<h3>🛒 Giỏ hàng</h3>
+
+<div id="cartItems"></div>
+
+<p><b>Tổng:</b> <span id="cartTotal">0</span> đ</p>
+
+<button class="btn" onclick="clearCart()">Xóa hết</button>
+<button class="btn" onclick="closeCart()">Đóng</button>
+</div>
+<body>
+
+<header id="header">
+<nav>
+<a href="#home">Trang chủ</a>
+<a href="#product">Sản phẩm</a>
+<a href="#blog">Blog</a>
+<a href="#contact">Liên hệ</a>
+<a onclick="openAuth()">Tài khoản</a>
+<span onclick="openCart()" style="cursor:pointer;font-size:20px">
+🛒 (<span id="cartCount">0</span>)
+</span>
+</nav>
+
+
+<div id="currentUser"></div>
+</header>
+
+<style>
+	#cartItems{
+text-align:left;
+max-height:200px;
+overflow:auto;
+margin:10px 0;
+}
+
+.cart-item{
+display:flex;
+justify-content:space-between;
+margin:5px 0;
+font-size:14px;
+}
+/* ===== CART POPUP TOP RIGHT ===== */
+#cartBox{
+position:fixed;
+top:80px;
+right:20px;
+width:320px;
+background:white;
+border-radius:15px;
+box-shadow:0 10px 30px rgba(0,0,0,0.2);
+padding:15px;
+z-index:2000;
+
+display:none;
+animation:slideIn .3s ease;
+}
+
+@keyframes slideIn{
+from{transform:translateY(-20px);opacity:0}
+to{transform:translateY(0);opacity:1}
+}
+
+#cartItems{
+max-height:250px;
+overflow:auto;
+margin:10px 0;
+}
+
+.cart-item{
+display:flex;
+justify-content:space-between;
+margin:6px 0;
+font-size:14px;
+border-bottom:1px solid #eee;
+padding-bottom:5px;
+}
+
+#cartOverlay{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,0.4);
+z-index:1999;
+display:none;
+}
+</style>
+
+<!-- CART POPUP -->
+<div id="cartBox" class="popup">
+<div class="popup-content">
+<h3>🛒 Giỏ hàng</h3>
+
+<div id="cartItems"></div>
+
+<p><b>Tổng: </b><span id="cartTotal">0</span> đ</p>
+
+<button class="btn" onclick="clearCart()">Xóa hết</button>
+<button class="btn" onclick="closeCart()">Đóng</button>
+</div>
+</div>
+
+<!-- HOME -->
+<section id="home" class="section hero">
+<h1>🐾 PET SHOP</h1>
+<p>Thiên đường cho Boss 😈</p>
+</section>
+
+<!-- PRODUCT -->
+<section id="product" class="section">
+<h2>Sản phẩm</h2>
+<div class="products">
+
+<div class="card">
+<img src="aomeo.jpg">
+<p>Áo mèo xanh</p>
+<button class="btn" onclick="addToCart('Áo mèo xanh',80000)">Mua</button>
+</div>
+
+<div class="card">
+<img src="daydeo.jpg">
+<p>Dây dắt chó đi dạo</p>
+<button class="btn" onclick="addToCart('Dây dắt chó đi dạo',120000)">Mua</button>
+</div>
+
+<div class="card">
+<img src="https://pos.nvncdn.com/47612e-39667/ps/Hat-Cho-Cho-Khong-Ngu-Coc-Mix-Thit-Vien-Wanpy-500g-6.jpg?v=1772615140">
+<p>Ngũ cốc dinh dưỡng</p>
+<button class="btn" onclick="addToCart('Ngũ cốc dinh dưỡng',200000)">Mua</button>
+</div>
+
+<div class="card">
+<img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ3qeIKOZ7FQC6UfJcrjMsfFo-bj2K_Z1Ttgw&s">
+<p>Pate cho mèo ú</p>
+<button class="btn" onclick="addToCart('Pate cho mèo ú',150000)">Mua</button>
+</div>
+
+<div class="card">
+<img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSSQZ4OHAC-G_EfyJh-lrZZUnOV19_8_6LJog&s">
+<p>Pate cho cún cưng</p>
+<button class="btn" onclick="addToCart('Pate cho cún cưng',180000)">Mua</button>
+</div>
+
+<div class="card">
+<img src="https://paddy.vn/cdn/shop/products/banh-xuong-orgo-cho-cho-bo-sung-canxi-and-sach-rang-paddy-6.jpg?v=1697773765">
+<p>Bánh xương </p>
+<button class="btn" onclick="addToCart('Bánh xương',50000)">Mua</button>
+</div>
+
+<div class="card">
+<img src="https://cdn.24h.com.vn/upload/4-2024/images/2024-12-27/Nha-giau-chi-tien-trieu-mua-quan-ao-moi-cho-thu-cung-dien-Tet-1-1735282544-224-width740height690.jpg">
+<p>Áo đỏ cho cún </p>
+<button class="btn" onclick="addToCart('Áo đỏ cho cún',80000)">Mua</button>
+</div>
+
+<div class="card">
+<img src="https://paddy.vn/cdn/shop/files/banh-thuong-cho-smartheart.jpg?v=1776326149">
+<p>Súp ăn nhanh cho cún </p>
+<button class="btn" onclick="addToCart('Súp ăn nhanh cho cún',140000)">Mua</button>
+</div>
+
+<div class="card">
+<img src="https://paddy.vn/cdn/shop/files/R_9.jpg?v=1692495939">
+<p>Balo Cho Chó Mèo Phi Hành Gia Hình Mặt Mèo </p>
+<button class="btn" onclick="addToCart('Balo Cho Chó Mèo Phi Hành Gia Hình Mặt Mèo',280000)">Mua</button>
+</div>
+
+<div class="card">
+<img src="https://sieupet.com/sites/default/files/vong_co_cho_meo1.jpg">
+<p>Vòng cổ cho hoàng thượng </p>
+<button class="btn" onclick="addToCart('Vòng cổ cho hoàng thượng',50000)">Mua</button>
+</div>
+
+<div class="card">
+<img src="https://els.vn/wp-content/uploads/2020/04/vong-co-chong-sua-cho-cho-training-collar-1.jpg">
+<p>Vòng cổ chống sủa cho chó</p>
+<button class="btn" onclick="addToCart('Vòng cổ chống sủa cho chó',730000)">Mua</button>
+</div>
+
+<div class="card">
+<img src="https://product.hstatic.net/200000264739/product/chuong_cao_cap_bc0c8dcdcd8541b08a36404218bf881d_master.jpg">
+<p>Chuồng mèo nhiều tầng cao cấp</p>
+<button class="btn" onclick="addToCart('Chuồng mèo nhiều tầng cao cấp',1600000)">Mua</button>
+</div>
+
+</div>
+</section>
+
+<!-- BLOG GIGA MODE -->
+<section id="blog" class="section">
+<h2 style="text-align:center">Bài viết nổi bật</h2>
+
+<div class="blog-card">
+
+<img src="https://pendecor.vn/uploads/files/2023/08/04/thiet-ke-pet-shop-3.jpeg">
+
+<div class="blog-content">
+
+<h3>🐾 NƠI HẠNH PHÚC CỦA CÁC "HOÀNG THƯỢNG" VÀ "BOSS" 🐾</h3>
+
+<p>
+Ba mẹ ơi, có phải ba mẹ đang tìm một <b>"trạm dừng chân"</b> lý tưởng cho bé yêu nhà mình không?  
+Ghé ngay <b>Pet Shop</b> để trải nghiệm không gian mua sắm đầy màu sắc nhé!
+</p>
+
+<ul>
+<li>👕 Hàng ngàn mẫu quần áo <b>"siêu sành điệu"</b></li>
+<li>🍖 Thức ăn hạt, pate thơm ngon</li>
+<li>✂️ Tắm tỉa chuẩn 5 sao</li>
+</ul>
+
+<button class="btn" onclick="toggleBlog()">Xem thêm</button>
+
+<p id="moreBlog" class="more">
+✨ Đến với Pet Shop, Boss không chỉ được chăm sóc mà còn được tận hưởng dịch vụ tốt nhất!  
+👉 Ghé ngay để trải nghiệm nhé!
+</p>
+
+</div>
+</div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact" class="section">
+<h2>Founder</h2>
+
+<div class="contact">
+
+<div class="card">
+<img src="tb.jpg">
+<p>Thiên Bảo</p>
+<p>Founder</p>
+<p>0908300648</p>
+
+<a href="https://www.instagram.com/tbaoo0703/" target="_blank" class="btn">
+📸 Instagram
+</a>
+</div>
+
+<div class="card">
+<img src="cua.jpg">
+<p>Khánh Linh</p>
+<p>Co-Founder</p>
+<p>0908300648</p>
+
+<a href="https://www.instagram.com/tbaoo0703/" target="_blank" class="btn">
+📸 Instagram
+</a>
+</div>
+
+</div>
+</section>
+
+<!-- LOGIN -->
+<div id="authBox" class="popup">
+<div class="popup-content">
+<h3>Đăng nhập</h3>
+<input id="user" placeholder="User"><br><br>
+<input id="pass" type="password" placeholder="Pass"><br><br>
+<button class="btn" onclick="login()">Login</button>
+<button class="btn" onclick="register()">Register</button>
+<p id="msg"></p>
+</div>
+</div>
+<style>
+/* ===== FOOTER ===== */
+.footer{
+background:linear-gradient(135deg,#ee4d2d,#ff7a5c);
+color:white;
+padding:50px 20px 20px;
+margin-top:60px;
+position:relative;
+overflow:hidden;
+}
+
+.footer::before{
+content:"";
+position:absolute;
+top:-50px;
+left:-50px;
+width:200px;
+height:200px;
+background:rgba(255,255,255,0.1);
+border-radius:50%;
+}
+
+.footer-container{
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+max-width:1200px;
+margin:auto;
+gap:20px;
+}
+
+.footer-col{
+flex:1;
+min-width:220px;
+}
+
+.footer-col h3{
+font-size:22px;
+margin-bottom:10px;
+}
+
+.footer-col h4{
+margin-bottom:15px;
+border-bottom:2px solid rgba(255,255,255,0.3);
+display:inline-block;
+padding-bottom:5px;
+}
+
+.footer-col p{
+opacity:0.9;
+margin:6px 0;
+}
+
+.social-links a{
+display:inline-block;
+margin-right:10px;
+padding:6px 10px;
+background:rgba(255,255,255,0.2);
+border-radius:20px;
+color:white;
+text-decoration:none;
+transition:.3s;
+}
+
+.social-links a:hover{
+background:white;
+color:#ee4d2d;
+transform:translateY(-3px);
+}
+
+.copyright{
+text-align:center;
+margin-top:30px;
+padding-top:15px;
+border-top:1px solid rgba(255,255,255,0.3);
+font-size:14px;
+opacity:0.8;
+}
+</style>
+<!-- FOOTER -->
+<footer class="footer">
+<div class="footer-container">
+
+<div class="footer-col">
+<h3>🐶 Pet Shop</h3>
+<p>Thiên đường cho Boss 🐾</p>
+</div>
+
+<div class="footer-col">
+<h4>Liên hệ</h4>
+<p>📞 0908300648</p>
+<p>📍 Biên Hòa</p>
+</div>
+
+<div class="social-links">
+<a href="https://www.facebook.com/tbaoo0703">📘 Facebook</a>
+<a href="https://www.instagram.com/tbaoo0703/">📸 Instagram</a>
+<a href="https://zalo.me/0908300648">💬 Zalo</a>
+</div>
+</div>
+
+</div>
+
+<div class="copyright">
+© 2026 - Designed by tb
+</div>
+</footer>
+
+<script>
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+function updateCartUI(){
+let list = document.getElementById("cartItems");
+let total = 0;
+list.innerHTML="";
+
+cart.forEach((item,i)=>{
+total += item.price;
+
+list.innerHTML += `
+<div class="cart-item">
+${item.name} - ${item.price}đ
+<span onclick="removeItem(${i})" style="cursor:pointer;color:red">x</span>
+</div>
+`;
+});
+
+document.getElementById("cartTotal").innerText =
+total.toLocaleString("vi-VN");
+document.getElementById("cartCount").innerText = cart.length;
+
+localStorage.setItem("cart",JSON.stringify(cart));
+}
+
+function addToCart(name,price){
+cart.push({name,price});
+updateCartUI();
+}
+
+function removeItem(i){
+cart.splice(i,1);
+updateCartUI();
+}
+
+function clearCart(){
+cart=[];
+updateCartUI();
+}
+
+function openCart(){
+document.getElementById("cartBox").style.display="flex";
+}
+
+function closeCart(){
+document.getElementById("cartBox").style.display="none";
+}
+
+updateCartUI();
+
+const sections=document.querySelectorAll(".section");
+const header=document.getElementById("header");
+
+window.addEventListener("scroll",()=>{
+let y=window.scrollY;
+header.classList.toggle("active",y>50);
+sections.forEach(sec=>{
+if(y>sec.offsetTop-200) sec.classList.add("show");
+});
+});
+
+function toggleBlog(){
+let m=document.getElementById("moreBlog");
+m.style.display=m.style.display==="block"?"none":"block";
+}
+
+/* LOGIN */
+let users=JSON.parse(localStorage.getItem("users"))||{};
+let currentUser=localStorage.getItem("currentUser");
+
+function openAuth(){authBox.style.display="flex";}
+window.onclick=e=>{if(e.target==authBox)authBox.style.display="none";}
+
+function showUser(){
+currentUser?
+currentUserDiv.innerHTML="👤 "+currentUser+" | <span onclick='logout()'>Logout</span>"
+:currentUserDiv.innerHTML="";
+}
+const currentUserDiv=document.getElementById("currentUser");
+showUser();
+
+function register(){
+if(users[user.value]){msg.innerText="Đã tồn tại";return;}
+users[user.value]=pass.value;
+localStorage.setItem("users",JSON.stringify(users));
+msg.innerText="OK";
+}
+
+function login(){
+if(users[user.value]==pass.value){
+localStorage.setItem("currentUser",user.value);
+currentUser=user.value;
+showUser();
+authBox.style.display="none";
+}else msg.innerText="Sai!";
+}
+
+function logout(){
+localStorage.removeItem("currentUser");
+currentUser=null;
+showUser();
+}
+</script>
+
+<script>
+/* SCROLL */
+const sections=document.querySelectorAll(".section");
+const header=document.getElementById("header");
+
+window.addEventListener("scroll",()=>{
+let y=window.scrollY;
+if(y>50) header.classList.add("active");
+else header.classList.remove("active");
+
+sections.forEach(sec=>{
+if(y>sec.offsetTop-200) sec.classList.add("show");
+});
+});
+
+/* BLOG */
+function toggleBlog(){
+let m=document.getElementById("more");
+m.style.display=m.style.display==="block"?"none":"block";
+}
+
+/* LOGIN SYSTEM */
+let users=JSON.parse(localStorage.getItem("users"))||{};
+let currentUser=localStorage.getItem("currentUser");
+
+function openAuth(){
+document.getElementById("authBox").style.display="flex";
+}
+
+window.onclick=function(e){
+let box=document.getElementById("authBox");
+if(e.target==box) box.style.display="none";
+}
+
+function showUser(){
+let el=document.getElementById("currentUser");
+if(currentUser){
+el.innerHTML="👤 "+currentUser+" | <span onclick='logout()' style='cursor:pointer'>Logout</span>";
+}else el.innerHTML="";
+}
+showUser();
+
+function register(){
+let u=user.value,p=pass.value;
+if(users[u]){msg.innerText="Đã tồn tại";return;}
+users[u]=p;
+localStorage.setItem("users",JSON.stringify(users));
+msg.innerText="Đăng ký OK";
+}
+
+function login(){
+let u=user.value,p=pass.value;
+if(users[u]==p){
+localStorage.setItem("currentUser",u);
+currentUser=u;
+showUser();
+authBox.style.display="none";
+}else msg.innerText="Sai!";
+}
+
+function logout(){
+localStorage.removeItem("currentUser");
+currentUser=null;
+showUser();
+}
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+function updateCartUI(){
+let list = document.getElementById("cartItems");
+let total = 0;
+list.innerHTML="";
+
+cart.forEach((item,i)=>{
+total += item.price;
+
+list.innerHTML += `
+<div class="cart-item">
+${item.name} - ${item.price}đ
+<span onclick="removeItem(${i})" style="cursor:pointer;color:red">x</span>
+</div>
+`;
+});
+
+document.getElementById("cartTotal").innerText = total;
+document.getElementById("cartCount").innerText = cart.length;
+
+localStorage.setItem("cart",JSON.stringify(cart));
+}
+
+function addToCart(name,price){
+cart.push({name,price});
+updateCartUI();
+openCart();
+}
+
+function removeItem(i){
+cart.splice(i,1);
+updateCartUI();
+}
+
+function clearCart(){
+cart=[];
+updateCartUI();
+}
+
+function openCart(){
+document.getElementById("cartBox").style.display="block";
+document.getElementById("cartOverlay").style.display="block";
+}
+
+function closeCart(){
+document.getElementById("cartBox").style.display="none";
+document.getElementById("cartOverlay").style.display="none";
+}
+
+updateCartUI();
+</script>
+
+</body>
+</html>
